@@ -1,56 +1,164 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Gaming Registration</title>
+    <title>Ultra Pro Gaming Registration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <style>
-        body {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
             font-family: Arial;
-            background: #020617;
-            color: white;
-            text-align: center;
-            margin-top: 50px;
         }
 
-        .box {
-            background: #0f172a;
+        body {
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        /* Animated Background */
+        .bg {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(-45deg, #0f172a, #1e293b, #0f766e, #22c55e);
+            background-size: 400% 400%;
+            animation: moveBG 10s ease infinite;
+            z-index: -2;
+        }
+
+        @keyframes moveBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating particles */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particles span {
+            position: absolute;
+            display: block;
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
+            border-radius: 50%;
+            animation: float 10s linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        /* Card */
+        .card {
+            width: 380px;
             padding: 30px;
-            border-radius: 10px;
-            width: 350px;
-            margin: auto;
+            border-radius: 18px;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            animation: pop 1s ease;
+        }
+
+        @keyframes pop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .title {
+            text-align: center;
+            font-size: 24px;
+            color: #22c55e;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #22c55e;
         }
 
         input, select {
-            padding: 10px;
-            width: 90%;
-            margin-bottom: 12px;
-            border-radius: 5px;
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
             border: none;
+            border-radius: 10px;
+            background: #1e293b;
+            color: white;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus, select:focus {
+            box-shadow: 0 0 15px #22c55e;
+            transform: scale(1.02);
         }
 
         button {
-            padding: 10px 20px;
-            background: #22c55e;
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
             border: none;
-            border-radius: 5px;
+            border-radius: 10px;
+            background: linear-gradient(45deg, #22c55e, #16a34a);
+            color: white;
+            font-weight: bold;
             cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 0 15px #22c55e;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px #22c55e;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #94a3b8;
         }
 
         a {
             color: #22c55e;
+            text-decoration: none;
         }
+
     </style>
 </head>
 
 <body>
 
-<div class="box">
-    <h2>🎮 Game Registration</h2>
+<div class="bg"></div>
+
+<div class="particles" id="particles"></div>
+
+<div class="card">
+
+    <div class="title">🔥 ULTRA GAMING REGISTRATION</div>
 
     <form action="/submit" method="POST">
 
         <input type="text" name="name" placeholder="Player Name" required>
+
         <input type="text" name="uid" placeholder="Game UID" required>
-        <input type="email" name="email" placeholder="Email" required>
+
+        <input type="email" name="email" placeholder="Email ID" required>
+
         <input type="text" name="team" placeholder="Team Name">
 
         <select name="device" required>
@@ -66,16 +174,27 @@
             <option>Call of Duty</option>
         </select>
 
-        <button type="submit">Register</button>
+        <button type="submit">🚀 REGISTER NOW</button>
     </form>
 
-    <br>
-    <a href="/login">Admin Login</a>
+    <div class="footer">
+        Admin Panel: <a href="/login">Login</a>
+    </div>
+
 </div>
 
-</body>
-</html>
-</div>
+<script>
+// Particle generator
+const container = document.getElementById("particles");
+
+for (let i = 0; i < 40; i++) {
+    let span = document.createElement("span");
+    span.style.left = Math.random() * 100 + "vw";
+    span.style.animationDuration = (Math.random() * 5 + 5) + "s";
+    span.style.opacity = Math.random();
+    container.appendChild(span);
+}
+</script>
 
 </body>
 </html>
