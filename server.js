@@ -1,32 +1,91 @@
-app.get('/data', (req, res) => {
-    if (req.query.auth !== "true") {
-        return res.redirect('/login');
+const express = require("express");
+const fs = require("fs");
+const app = express();
+
+// middleware
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(__dirname));
+
+// 🔐 ADMIN LOGIN
+const ADMIN_USER = "admin";
+const ADMIN_PASS = "12345";
+
+// ================= HOME =================
+app.get("/", (req, res) => {
+    res.sendFile(__dirname + "/index.html");
+});
+
+// ================= SUBMIT =================
+app.post("/submit", (req, res) => {
+    const { name, uid, email, team, device, game } = req.body;
+
+    const data = `Name:${name}|UID:${uid}|Email:${email}|Team:${team}|Device:${device}|Game:${game}\n`;
+
+    fs.appendFileSync("data.txt", data);
+
+    res.send(`
+        <h2 style="text-align:center;color:green;margin-top:50px;">
+        ✅ Registration Successful
+        </h2>
+        <center><a href="/">Go Back</a></center>
+    `);
+});
+
+// ================= LOGIN PAGE =================
+app.get("/login", (req, res) => {
+    res.send(`
+        <html>
+        <body style="background:#020617;color:white;text-align:center;margin-top:100px;font-family:Arial">
+
+        <h2>🔐 Admin Login</h2>
+
+        <form action="/login" method="POST">
+            <input name="username" placeholder="Username" required style="padding:10px;margin:5px;"><br>
+            <input type="password" name="password" placeholder="Password" required style="padding:10px;margin:5px;"><br><br>
+            <button style="padding:10px 20px;background:#22c55e;border:none;">
+                Login
+            </button>
+        </form>
+
+        </body>
+        </html>
+    `);
+});
+
+// ================= LOGIN CHECK =================
+app.post("/login", (req, res) => {
+    const { username, password } = req.body;
+
+    if (username === ADMIN_USER && password === ADMIN_PASS) {
+        return res.redirect("/data?auth=true");
     }
 
-    if (!fs.existsSync('data.txt')) {
+    res.send("<h3 style='color:red;text-align:center;'>Wrong Credentials</h3>");
+});
+
+// ================= ADMIN PANEL =================
+app.get("/data", (req, res) => {
+    if (req.query.auth !== "true") {
+        return res.redirect("/login");
+    }
+
+    if (!fs.existsSync("data.txt")) {
         return res.send("No registrations yet");
     }
 
-    const raw = fs.readFileSync('data.txt', 'utf-8').trim();
+    const raw = fs.readFileSync("data.txt", "utf-8").trim();
 
     const rows = raw.split("\n").map(line => {
-        const parts = line.split("|");
-
-        const name = parts[0]?.replace("Name:", "").trim();
-        const uid = parts[1]?.replace("UID:", "").trim();
-        const email = parts[2]?.replace("Email:", "").trim();
-        const team = parts[3]?.replace("Team:", "").trim();
-        const device = parts[4]?.replace("Device:", "").trim();
-        const game = parts[5]?.replace("Game:", "").trim();
+        const p = line.split("|");
 
         return `
         <tr>
-            <td>${name}</td>
-            <td>${uid}</td>
-            <td>${email}</td>
-            <td>${team}</td>
-            <td>${device}</td>
-            <td>${game}</td>
+            <td>${p[0]?.replace("Name:", "")}</td>
+            <td>${p[1]?.replace("UID:", "")}</td>
+            <td>${p[2]?.replace("Email:", "")}</td>
+            <td>${p[3]?.replace("Team:", "")}</td>
+            <td>${p[4]?.replace("Device:", "")}</td>
+            <td>${p[5]?.replace("Game:", "")}</td>
         </tr>`;
     }).join("");
 
@@ -39,27 +98,17 @@ app.get('/data', (req, res) => {
                     background: #020617;
                     color: white;
                     text-align: center;
-                    margin: 0;
-                    padding: 20px;
-                }
-
-                h2 {
-                    color: #22c55e;
-                    margin-bottom: 20px;
                 }
 
                 table {
                     margin: auto;
-                    border-collapse: collapse;
                     width: 95%;
+                    border-collapse: collapse;
                     margin-top: 20px;
-                    background: #0f172a;
-                    border-radius: 10px;
-                    overflow: hidden;
                 }
 
                 th, td {
-                    border: 1px solid #334155;
+                    border: 1px solid #444;
                     padding: 10px;
                 }
 
@@ -72,52 +121,29 @@ app.get('/data', (req, res) => {
                     background: #1e293b;
                 }
 
-                tr:hover {
-                    background: #334155;
+                a {
+                    color: #22c55e;
                 }
 
                 .btn {
-                    display: inline-block;
-                    padding: 10px 18px;
-                    margin: 10px 5px;
-                    border-radius: 8px;
-                    text-decoration: none;
-                    font-weight: bold;
-                    transition: 0.3s;
-                }
-
-                .home {
-                    background: #22c55e;
-                    color: black;
-                }
-
-                .login {
-                    background: #1e293b;
-                    color: white;
-                    border: 1px solid #22c55e;
-                }
-
-                .btn:hover {
-                    transform: scale(1.05);
-                }
-
-                @media(max-width:768px){
-                    table {
-                        font-size: 12px;
-                    }
+                    display:inline-block;
+                    padding:10px 20px;
+                    margin:10px;
+                    background:#22c55e;
+                    color:black;
+                    text-decoration:none;
+                    border-radius:8px;
                 }
             </style>
         </head>
 
         <body>
 
-            <h2>🎮 Player Registrations Admin Panel</h2>
+            <h2>🎮 Admin Panel</h2>
 
-            <!-- BUTTONS -->
-            <a href="/" class="btn home">⬅ Back to Home</a>
-            <a href="/login" class="btn login">🔐 Login Page</a>
+            <a class="btn" href="/">⬅ Home</a>
+            <a class="btn" href="/login">🔐 Login</a>
 
-            <!-- TABLE -->
             <table>
                 <tr>
                     <th>Name</th>
@@ -131,6 +157,15 @@ app.get('/data', (req, res) => {
             </table>
 
         </body>
+        </html>
+    `);
+});
+
+// ================= START SERVER =================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
+});
         </html>
     `);
 });
