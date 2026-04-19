@@ -3,10 +3,9 @@ const fs = require('fs');
 // UID save
 app.post('/submit', (req, res) => {
     const uid = req.body.uid;
-
-    fs.appendFileSync('data.txt', uid + "\n");
-
-    res.send("UID saved!");
+    console.log(uid);
+    res.send("Saved");
+});
 });
 
 // UID list dekhne ke liye route
