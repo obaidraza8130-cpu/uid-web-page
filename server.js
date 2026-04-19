@@ -1,12 +1,15 @@
 const express = require("express");
 const fs = require("fs");
-const app = express();
+const http = require("http");
+const { Server } = require("socket.io");
 
-// middleware
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-// 🔐 ADMIN LOGIN
 const ADMIN_USER = "admin";
 const ADMIN_PASS = "12345";
 
@@ -19,13 +22,24 @@ app.get("/", (req, res) => {
 app.post("/submit", (req, res) => {
     const { name, uid, email, team, device, game } = req.body;
 
-    const data = `Name:${name}|UID:${uid}|Email:${email}|Team:${team}|Device:${device}|Game:${game}\n`;
+    const data = {
+        name,
+        uid,
+        email,
+        team,
+        device,
+        game
+    };
 
-    fs.appendFileSync("data.txt", data);
+    // save in file
+    fs.appendFileSync("data.txt", JSON.stringify(data) + "\n");
+
+    // 🔥 REAL-TIME PUSH TO ADMIN
+    io.emit("new-user", data);
 
     res.send(`
-        <h2 style="text-align:center;color:green;margin-top:50px;">
-        ✅ Registration Successful
+        <h2 style="color:green;text-align:center;margin-top:50px;">
+        ✅ Registered Successfully
         </h2>
         <center><a href="/">Go Back</a></center>
     `);
@@ -34,139 +48,77 @@ app.post("/submit", (req, res) => {
 // ================= LOGIN PAGE =================
 app.get("/login", (req, res) => {
     res.send(`
-        <html>
-        <body style="background:#020617;color:white;text-align:center;margin-top:100px;font-family:Arial">
-
-        <h2>🔐 Admin Login</h2>
-
-        <form action="/login" method="POST">
-            <input name="username" placeholder="Username" required style="padding:10px;margin:5px;"><br>
-            <input type="password" name="password" placeholder="Password" required style="padding:10px;margin:5px;"><br><br>
-            <button style="padding:10px 20px;background:#22c55e;border:none;">
-                Login
-            </button>
+        <h2 style="text-align:center;margin-top:100px;">Admin Login</h2>
+        <form action="/login" method="POST" style="text-align:center;">
+            <input name="username" placeholder="Username"><br><br>
+            <input name="password" type="password" placeholder="Password"><br><br>
+            <button>Login</button>
         </form>
-
-        </body>
-        </html>
     `);
 });
 
-// ================= LOGIN CHECK =================
 app.post("/login", (req, res) => {
     const { username, password } = req.body;
 
     if (username === ADMIN_USER && password === ADMIN_PASS) {
-        return res.redirect("/data?auth=true");
+        return res.redirect("/admin");
     }
 
-    res.send("<h3 style='color:red;text-align:center;'>Wrong Credentials</h3>");
+    res.send("Wrong credentials");
 });
 
 // ================= ADMIN PANEL =================
-app.get("/data", (req, res) => {
-    if (req.query.auth !== "true") {
-        return res.redirect("/login");
-    }
-
-    if (!fs.existsSync("data.txt")) {
-        return res.send("No registrations yet");
-    }
-
-    const raw = fs.readFileSync("data.txt", "utf-8").trim();
-
-    const rows = raw.split("\n").map(line => {
-        const p = line.split("|");
-
-        return `
-        <tr>
-            <td>${p[0]?.replace("Name:", "")}</td>
-            <td>${p[1]?.replace("UID:", "")}</td>
-            <td>${p[2]?.replace("Email:", "")}</td>
-            <td>${p[3]?.replace("Team:", "")}</td>
-            <td>${p[4]?.replace("Device:", "")}</td>
-            <td>${p[5]?.replace("Game:", "")}</td>
-        </tr>`;
-    }).join("");
-
+app.get("/admin", (req, res) => {
     res.send(`
         <html>
         <head>
-            <style>
-                body {
-                    font-family: Arial;
-                    background: #020617;
-                    color: white;
-                    text-align: center;
-                }
-
-                table {
-                    margin: auto;
-                    width: 95%;
-                    border-collapse: collapse;
-                    margin-top: 20px;
-                }
-
-                th, td {
-                    border: 1px solid #444;
-                    padding: 10px;
-                }
-
-                th {
-                    background: #22c55e;
-                    color: black;
-                }
-
-                tr:nth-child(even) {
-                    background: #1e293b;
-                }
-
-                a {
-                    color: #22c55e;
-                }
-
-                .btn {
-                    display:inline-block;
-                    padding:10px 20px;
-                    margin:10px;
-                    background:#22c55e;
-                    color:black;
-                    text-decoration:none;
-                    border-radius:8px;
-                }
-            </style>
+            <title>Admin Panel</title>
+            <script src="/socket.io/socket.io.js"></script>
         </head>
 
-        <body>
+        <body style="background:#020617;color:white;font-family:Arial;text-align:center">
 
-            <h2>🎮 Admin Panel</h2>
+        <h2>🎮 LIVE ADMIN PANEL</h2>
 
-            <a class="btn" href="/">⬅ Home</a>
-            <a class="btn" href="/login">🔐 Login</a>
+        <table border="1" style="margin:auto;width:90%">
+            <tr>
+                <th>Name</th>
+                <th>UID</th>
+                <th>Email</th>
+                <th>Team</th>
+                <th>Device</th>
+                <th>Game</th>
+            </tr>
+            <tbody id="table"></tbody>
+        </table>
 
-            <table>
-                <tr>
-                    <th>Name</th>
-                    <th>UID</th>
-                    <th>Email</th>
-                    <th>Team</th>
-                    <th>Device</th>
-                    <th>Game</th>
-                </tr>
-                ${rows}
-            </table>
+        <script>
+            const socket = io();
+
+            const table = document.getElementById("table");
+
+            socket.on("new-user", (data) => {
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${data.name}</td>
+                    <td>${data.uid}</td>
+                    <td>${data.email}</td>
+                    <td>${data.team}</td>
+                    <td>${data.device}</td>
+                    <td>${data.game}</td>
+                `;
+
+                table.prepend(row);
+            });
+        </script>
 
         </body>
         </html>
     `);
 });
 
-// ================= START SERVER =================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log("Server running on port " + PORT);
+// ================= START =================
+server.listen(process.env.PORT || 3000, () => {
+    console.log("Server running...");
 });
-        </html>
-    `);
-});
-
