@@ -1,73 +1,3 @@
-const express = require('express');
-const fs = require('fs');
-const app = express();
-
-app.use(express.urlencoded({ extended: true }));
-
-// 🔐 ADMIN CREDENTIALS
-const ADMIN_USER = "admin";
-const ADMIN_PASS = "12345";
-
-// ================= HOME PAGE =================
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
-
-// ================= REGISTER =================
-app.post('/submit', (req, res) => {
-    const { name, uid, email, team, device, game } = req.body;
-
-    const data = `Name:${name}|UID:${uid}|Email:${email}|Team:${team}|Device:${device}|Game:${game}\n`;
-
-    fs.appendFileSync('data.txt', data);
-
-    res.send(`
-        <h2 style="color:green;text-align:center;margin-top:50px;">
-        ✅ Registration Successful!
-        </h2>
-        <center><a href="/">Go Back</a></center>
-    `);
-});
-
-// ================= LOGIN PAGE =================
-app.get('/login', (req, res) => {
-    res.send(`
-        <html>
-        <body style="background:#020617;color:white;text-align:center;margin-top:100px;font-family:Arial">
-
-        <h2>🔐 Admin Login</h2>
-
-        <form action="/login" method="POST">
-            <input name="username" placeholder="Username" required style="padding:10px;margin:5px;"><br>
-            <input type="password" name="password" placeholder="Password" required style="padding:10px;margin:5px;"><br><br>
-
-            <button style="padding:10px 20px;background:#22c55e;border:none;">
-                Login
-            </button>
-        </form>
-
-        </body>
-        </html>
-    `);
-});
-
-// ================= LOGIN CHECK =================
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
-        return res.redirect('/data?auth=true');
-    }
-
-    res.send(`
-        <h3 style="color:red;text-align:center;margin-top:100px;">
-        ❌ Wrong Username or Password
-        </h3>
-        <center><a href="/login">Try Again</a></center>
-    `);
-});
-
-// ================= ADMIN PANEL =================
 app.get('/data', (req, res) => {
     if (req.query.auth !== "true") {
         return res.redirect('/login');
@@ -109,33 +39,85 @@ app.get('/data', (req, res) => {
                     background: #020617;
                     color: white;
                     text-align: center;
+                    margin: 0;
+                    padding: 20px;
                 }
+
+                h2 {
+                    color: #22c55e;
+                    margin-bottom: 20px;
+                }
+
                 table {
                     margin: auto;
                     border-collapse: collapse;
-                    width: 90%;
-                    margin-top: 30px;
+                    width: 95%;
+                    margin-top: 20px;
+                    background: #0f172a;
+                    border-radius: 10px;
+                    overflow: hidden;
                 }
+
                 th, td {
-                    border: 1px solid #444;
+                    border: 1px solid #334155;
                     padding: 10px;
                 }
+
                 th {
                     background: #22c55e;
                     color: black;
                 }
+
                 tr:nth-child(even) {
                     background: #1e293b;
                 }
-                a {
-                    color: #22c55e;
+
+                tr:hover {
+                    background: #334155;
+                }
+
+                .btn {
+                    display: inline-block;
+                    padding: 10px 18px;
+                    margin: 10px 5px;
+                    border-radius: 8px;
+                    text-decoration: none;
+                    font-weight: bold;
+                    transition: 0.3s;
+                }
+
+                .home {
+                    background: #22c55e;
+                    color: black;
+                }
+
+                .login {
+                    background: #1e293b;
+                    color: white;
+                    border: 1px solid #22c55e;
+                }
+
+                .btn:hover {
+                    transform: scale(1.05);
+                }
+
+                @media(max-width:768px){
+                    table {
+                        font-size: 12px;
+                    }
                 }
             </style>
         </head>
 
         <body>
-            <h2>🎮 Player Registrations</h2>
 
+            <h2>🎮 Player Registrations Admin Panel</h2>
+
+            <!-- BUTTONS -->
+            <a href="/" class="btn home">⬅ Back to Home</a>
+            <a href="/login" class="btn login">🔐 Login Page</a>
+
+            <!-- TABLE -->
             <table>
                 <tr>
                     <th>Name</th>
@@ -148,14 +130,8 @@ app.get('/data', (req, res) => {
                 ${rows}
             </table>
 
-            <br><br>
-            <a href="/">Back</a>
         </body>
         </html>
     `);
 });
 
-// ================= START SERVER =================
-app.listen(process.env.PORT || 3000, () => {
-    console.log("Server running...");
-});
