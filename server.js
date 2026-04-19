@@ -1,3 +1,70 @@
+const express = require("express");
+const fs = require("fs");
+const http = require("http");
+const path = require("path");
+const { Server } = require("socket.io");
+
+// ✅ EXPRESS INIT (THIS WAS MISSING OR BROKEN)
+const app = express();
+
+// HTTP SERVER
+const server = http.createServer(app);
+const io = new Server(server);
+
+// middleware
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(__dirname));
+
+// admin login
+const ADMIN_USER = "ayaan";
+const ADMIN_PASS = "1122";
+
+// ================= HOME =================
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// ================= SUBMIT =================
+app.post("/submit", (req, res) => {
+    const { name, uid, email, team, device, game } = req.body;
+
+    const data = { name, uid, email, team, device, game };
+
+    fs.appendFileSync("data.txt", JSON.stringify(data) + "\n");
+
+    io.emit("new-user", data);
+
+    res.send(`
+        <h2 style="color:green;text-align:center;margin-top:50px;">
+        ✅ Registered Successfully
+        </h2>
+        <center><a href="/">Go Back</a></center>
+    `);
+});
+
+// ================= LOGIN =================
+app.get("/login", (req, res) => {
+    res.send(`
+        <h2 style="text-align:center;margin-top:100px;">Admin Login</h2>
+        <form method="POST" action="/login" style="text-align:center;">
+            <input name="username" placeholder="Username"><br><br>
+            <input name="password" type="password" placeholder="Password"><br><br>
+            <button>Login</button>
+        </form>
+    `);
+});
+
+app.post("/login", (req, res) => {
+    const { username, password } = req.body;
+
+    if (username === ADMIN_USER && password === ADMIN_PASS) {
+        return res.redirect("/admin");
+    }
+
+    res.send("Wrong credentials");
+});
+
+// ================= ADMIN =================
 app.get("/admin", (req, res) => {
     res.send(`
 <!DOCTYPE html>
@@ -45,4 +112,11 @@ app.get("/admin", (req, res) => {
 </body>
 </html>
     `);
+});
+
+// ================= START SERVER =================
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
 });
