@@ -10,7 +10,7 @@ const io = new Server(server);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-const ADMIN_USER = "Tanmay";
+const ADMIN_USER = "ayaan";
 const ADMIN_PASS = "1122";
 
 // ================= HOME =================
