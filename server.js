@@ -1,24 +1,16 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const path = require('path');
+const fs = require('fs');
 
-const app = express();
-
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Home page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Form submit
+// UID save
 app.post('/submit', (req, res) => {
     const uid = req.body.uid;
-    console.log("Received UID:", uid);
-    res.send("UID received!");
+
+    fs.appendFileSync('data.txt', uid + "\n");
+
+    res.send("UID saved!");
 });
 
-// IMPORTANT for Render
-app.listen(process.env.PORT || 3000, () => {
-    console.log("Server running...");
+// UID list dekhne ke liye route
+app.get('/uids', (req, res) => {
+    const data = fs.readFileSync('data.txt', 'utf-8');
+    res.send(`<pre>${data}</pre>`);
 });
