@@ -1,3 +1,43 @@
+const express = require('express');
+const fs = require('fs');
+const app = express();
+
+app.use(express.urlencoded({ extended: true }));
+
+// HOME PAGE
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
+
+// SUBMIT FORM
+app.post('/submit', (req, res) => {
+    const { name, uid, email, team, device, game } = req.body;
+
+    const data = `Name:${name}|UID:${uid}|Email:${email}|Team:${team}|Device:${device}|Game:${game}\n`;
+
+    fs.appendFileSync('data.txt', data);
+
+    res.send(`
+        <h2 style="color:green;text-align:center;margin-top:50px;">
+        ✅ Registration Successful!
+        </h2>
+        <center><a href="/">Go Back</a></center>
+    `);
+});
+
+// ADMIN LOGIN SIMPLE
+app.get('/login', (req, res) => {
+    res.send(`
+        <form action="/data" method="GET" style="text-align:center;margin-top:100px;">
+            <input type="hidden" name="auth" value="true"/>
+            <button style="padding:10px 20px;background:#22c55e;border:none;">
+                Enter Admin Panel
+            </button>
+        </form>
+    `);
+});
+
+// DATA VIEW (ADMIN PANEL)
 app.get('/data', (req, res) => {
     if (req.query.auth !== "true") {
         return res.redirect('/login');
@@ -12,15 +52,22 @@ app.get('/data', (req, res) => {
     const rows = raw.split("\n").map(line => {
         const parts = line.split("|");
 
-        const name = parts[0].replace("Name:", "").trim();
-        const uid = parts[1].replace("UID:", "").trim();
-        const game = parts[2].replace("Game:", "").trim();
+        const name = parts[0]?.replace("Name:", "").trim();
+        const uid = parts[1]?.replace("UID:", "").trim();
+        const email = parts[2]?.replace("Email:", "").trim();
+        const team = parts[3]?.replace("Team:", "").trim();
+        const device = parts[4]?.replace("Device:", "").trim();
+        const game = parts[5]?.replace("Game:", "").trim();
 
-        return `<tr>
-                    <td>${name}</td>
-                    <td>${uid}</td>
-                    <td>${game}</td>
-                </tr>`;
+        return `
+        <tr>
+            <td>${name}</td>
+            <td>${uid}</td>
+            <td>${email}</td>
+            <td>${team}</td>
+            <td>${device}</td>
+            <td>${game}</td>
+        </tr>`;
     }).join("");
 
     res.send(`
@@ -36,7 +83,7 @@ app.get('/data', (req, res) => {
                 table {
                     margin: auto;
                     border-collapse: collapse;
-                    width: 80%;
+                    width: 90%;
                     margin-top: 30px;
                 }
                 th, td {
@@ -63,6 +110,9 @@ app.get('/data', (req, res) => {
                 <tr>
                     <th>Name</th>
                     <th>UID</th>
+                    <th>Email</th>
+                    <th>Team</th>
+                    <th>Device</th>
                     <th>Game</th>
                 </tr>
                 ${rows}
@@ -74,7 +124,8 @@ app.get('/data', (req, res) => {
         </html>
     `);
 });
-});
 
-// Server start
-app.listen(process.env.PORT || 3000);
+// START SERVER
+app.listen(process.env.PORT || 3000, () => {
+    console.log("Server running...");
+});
