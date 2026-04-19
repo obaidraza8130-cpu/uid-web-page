@@ -1,20 +1,11 @@
 {
-  "name": "uid-project",
+  "name": "gaming-app",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "scripts": {
-      "start": "node server.js"
-    }
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "body-parser": "^2.2.2",
-    "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "express": "^4.18.2"
   }
 }
