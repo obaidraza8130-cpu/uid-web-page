@@ -14,16 +14,18 @@ app.get('/', (req, res) => {
 // Submit UID
 app.post('/submit', (req, res) => {
     const uid = req.body.uid;
-
     fs.appendFileSync('data.txt', uid + "\n");
-
-    console.log("Saved UID:", uid);
-
     res.send("UID saved successfully!");
 });
 
-// View all UIDs
+// 🔐 Protected UID view
 app.get('/uids', (req, res) => {
+    const password = req.query.pass;
+
+    if (password !== "admin123") {
+        return res.send("Access Denied ❌");
+    }
+
     if (!fs.existsSync('data.txt')) {
         return res.send("No data yet");
     }
@@ -33,12 +35,8 @@ app.get('/uids', (req, res) => {
     res.send(`
         <h2>All UIDs</h2>
         <pre>${data}</pre>
-        <br>
-        <a href="/">Back</a>
     `);
 });
 
-// Server start
-app.listen(process.env.PORT || 3000, () => {
-    console.log("Server running...");
-});
+// Server
+app.listen(process.env.PORT || 3000);
