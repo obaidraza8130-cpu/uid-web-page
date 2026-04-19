@@ -4,10 +4,7 @@ const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
 
-// ✅ EXPRESS INIT (THIS WAS MISSING OR BROKEN)
 const app = express();
-
-// HTTP SERVER
 const server = http.createServer(app);
 const io = new Server(server);
 
@@ -15,24 +12,45 @@ const io = new Server(server);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-// admin login
-const ADMIN_USER = "ayaan";
-const ADMIN_PASS = "1122";
+const DATA_FILE = "data.json";
+
+// ensure file exists
+if (!fs.existsSync(DATA_FILE)) {
+    fs.writeFileSync(DATA_FILE, "[]");
+}
 
 // ================= HOME =================
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
+// ================= GET ALL DATA =================
+app.get("/data", (req, res) => {
+    const data = JSON.parse(fs.readFileSync(DATA_FILE));
+    res.json(data);
+});
+
 // ================= SUBMIT =================
 app.post("/submit", (req, res) => {
     const { name, uid, email, team, device, game } = req.body;
 
-    const data = { name, uid, email, team, device, game };
+    let data = JSON.parse(fs.readFileSync(DATA_FILE));
 
-    fs.appendFileSync("data.txt", JSON.stringify(data) + "\n");
+    const newUser = {
+        id: Date.now(),
+        name,
+        uid,
+        email,
+        team,
+        device,
+        game
+    };
 
-    io.emit("new-user", data);
+    data.push(newUser);
+
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+
+    io.emit("new-user", newUser);
 
     res.send(`
         <h2 style="color:green;text-align:center;margin-top:50px;">
@@ -42,29 +60,22 @@ app.post("/submit", (req, res) => {
     `);
 });
 
-// ================= LOGIN =================
-app.get("/login", (req, res) => {
-    res.send(`
-        <h2 style="text-align:center;margin-top:100px;">Admin Login</h2>
-        <form method="POST" action="/login" style="text-align:center;">
-            <input name="username" placeholder="Username"><br><br>
-            <input name="password" type="password" placeholder="Password"><br><br>
-            <button>Login</button>
-        </form>
-    `);
+// ================= DELETE USER =================
+app.get("/delete/:id", (req, res) => {
+    const id = Number(req.params.id);
+
+    let data = JSON.parse(fs.readFileSync(DATA_FILE));
+
+    data = data.filter(user => user.id !== id);
+
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+
+    io.emit("refresh");
+
+    res.send("Deleted Successfully");
 });
 
-app.post("/login", (req, res) => {
-    const { username, password } = req.body;
-
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
-        return res.redirect("/admin");
-    }
-
-    res.send("Wrong credentials");
-});
-
-// ================= ADMIN =================
+// ================= ADMIN PANEL =================
 app.get("/admin", (req, res) => {
     res.send(`
 <!DOCTYPE html>
@@ -78,7 +89,7 @@ app.get("/admin", (req, res) => {
 
 <h2>🎮 LIVE ADMIN PANEL</h2>
 
-<table border="1" style="margin:auto;width:90%">
+<table border="1" style="margin:auto;width:95%">
     <tr>
         <th>Name</th>
         <th>UID</th>
@@ -86,6 +97,7 @@ app.get("/admin", (req, res) => {
         <th>Team</th>
         <th>Device</th>
         <th>Game</th>
+        <th>Action</th>
     </tr>
     <tbody id="table"></tbody>
 </table>
@@ -94,7 +106,14 @@ app.get("/admin", (req, res) => {
     const socket = io();
     const table = document.getElementById("table");
 
-    socket.on("new-user", (data) => {
+    // load existing data
+    fetch("/data")
+    .then(res => res.json())
+    .then(data => {
+        data.forEach(addRow);
+    });
+
+    function addRow(data) {
         const row = document.createElement("tr");
 
         row.innerHTML =
@@ -103,10 +122,27 @@ app.get("/admin", (req, res) => {
             "<td>" + data.email + "</td>" +
             "<td>" + data.team + "</td>" +
             "<td>" + data.device + "</td>" +
-            "<td>" + data.game + "</td>";
+            "<td>" + data.game + "</td>" +
+            "<td><button onclick='deleteUser(" + data.id + ")'>Delete</button></td>";
 
         table.prepend(row);
+    }
+
+    socket.on("new-user", (data) => {
+        addRow(data);
     });
+
+    socket.on("refresh", () => {
+        location.reload();
+    });
+
+    function deleteUser(id) {
+        fetch("/delete/" + id)
+        .then(res => res.text())
+        .then(msg => {
+            alert(msg);
+        });
+    }
 </script>
 
 </body>
@@ -114,7 +150,7 @@ app.get("/admin", (req, res) => {
     `);
 });
 
-// ================= START SERVER =================
+// ================= START =================
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
