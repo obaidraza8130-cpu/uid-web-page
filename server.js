@@ -4,12 +4,16 @@ const app = express();
 
 app.use(express.urlencoded({ extended: true }));
 
-// HOME PAGE
+// 🔐 ADMIN CREDENTIALS
+const ADMIN_USER = "admin";
+const ADMIN_PASS = "12345";
+
+// ================= HOME PAGE =================
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
-// SUBMIT FORM
+// ================= REGISTER =================
 app.post('/submit', (req, res) => {
     const { name, uid, email, team, device, game } = req.body;
 
@@ -25,19 +29,45 @@ app.post('/submit', (req, res) => {
     `);
 });
 
-// ADMIN LOGIN SIMPLE
+// ================= LOGIN PAGE =================
 app.get('/login', (req, res) => {
     res.send(`
-        <form action="/data" method="GET" style="text-align:center;margin-top:100px;">
-            <input type="hidden" name="auth" value="true"/>
+        <html>
+        <body style="background:#020617;color:white;text-align:center;margin-top:100px;font-family:Arial">
+
+        <h2>🔐 Admin Login</h2>
+
+        <form action="/login" method="POST">
+            <input name="username" placeholder="Username" required style="padding:10px;margin:5px;"><br>
+            <input type="password" name="password" placeholder="Password" required style="padding:10px;margin:5px;"><br><br>
+
             <button style="padding:10px 20px;background:#22c55e;border:none;">
-                Enter Admin Panel
+                Login
             </button>
         </form>
+
+        </body>
+        </html>
     `);
 });
 
-// DATA VIEW (ADMIN PANEL)
+// ================= LOGIN CHECK =================
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    if (username === ADMIN_USER && password === ADMIN_PASS) {
+        return res.redirect('/data?auth=true');
+    }
+
+    res.send(`
+        <h3 style="color:red;text-align:center;margin-top:100px;">
+        ❌ Wrong Username or Password
+        </h3>
+        <center><a href="/login">Try Again</a></center>
+    `);
+});
+
+// ================= ADMIN PANEL =================
 app.get('/data', (req, res) => {
     if (req.query.auth !== "true") {
         return res.redirect('/login');
@@ -125,7 +155,7 @@ app.get('/data', (req, res) => {
     `);
 });
 
-// START SERVER
+// ================= START SERVER =================
 app.listen(process.env.PORT || 3000, () => {
     console.log("Server running...");
 });
