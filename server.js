@@ -1,55 +1,3 @@
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-
-const app = express();
-
-app.use(express.urlencoded({ extended: true }));
-
-// Admin login
-const USER = "admin";
-const PASS = "12345";
-
-// Home page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Submit registration
-app.post('/submit', (req, res) => {
-    const { name, uid, game } = req.body;
-
-    const data = `Name: ${name} | UID: ${uid} | Game: ${game}\n`;
-
-    fs.appendFileSync('data.txt', data);
-
-    res.send("Registration Successful 🎮");
-});
-
-// Login page
-app.get('/login', (req, res) => {
-    res.send(`
-        <h2>Admin Login</h2>
-        <form method="POST" action="/login">
-            <input name="username" placeholder="Username" required><br><br>
-            <input type="password" name="password" placeholder="Password" required><br><br>
-            <button>Login</button>
-        </form>
-    `);
-});
-
-// Login check
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-
-    if (username === USER && password === PASS) {
-        res.redirect('/data?auth=true');
-    } else {
-        res.send("Wrong credentials ❌");
-    }
-});
-
-// View registrations (protected)
 app.get('/data', (req, res) => {
     if (req.query.auth !== "true") {
         return res.redirect('/login');
@@ -59,13 +7,73 @@ app.get('/data', (req, res) => {
         return res.send("No registrations yet");
     }
 
-    const data = fs.readFileSync('data.txt', 'utf-8');
+    const raw = fs.readFileSync('data.txt', 'utf-8').trim();
+
+    const rows = raw.split("\n").map(line => {
+        const parts = line.split("|");
+
+        const name = parts[0].replace("Name:", "").trim();
+        const uid = parts[1].replace("UID:", "").trim();
+        const game = parts[2].replace("Game:", "").trim();
+
+        return `<tr>
+                    <td>${name}</td>
+                    <td>${uid}</td>
+                    <td>${game}</td>
+                </tr>`;
+    }).join("");
 
     res.send(`
-        <h2>🎮 Player Registrations</h2>
-        <pre>${data}</pre>
-        <br><a href="/">Back</a>
+        <html>
+        <head>
+            <style>
+                body {
+                    font-family: Arial;
+                    background: #020617;
+                    color: white;
+                    text-align: center;
+                }
+                table {
+                    margin: auto;
+                    border-collapse: collapse;
+                    width: 80%;
+                    margin-top: 30px;
+                }
+                th, td {
+                    border: 1px solid #444;
+                    padding: 10px;
+                }
+                th {
+                    background: #22c55e;
+                    color: black;
+                }
+                tr:nth-child(even) {
+                    background: #1e293b;
+                }
+                a {
+                    color: #22c55e;
+                }
+            </style>
+        </head>
+
+        <body>
+            <h2>🎮 Player Registrations</h2>
+
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>UID</th>
+                    <th>Game</th>
+                </tr>
+                ${rows}
+            </table>
+
+            <br><br>
+            <a href="/">Back</a>
+        </body>
+        </html>
     `);
+});
 });
 
 // Server start
