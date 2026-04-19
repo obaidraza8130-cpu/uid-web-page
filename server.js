@@ -1,12 +1,14 @@
 const express = require("express");
 const fs = require("fs");
 const http = require("http");
+const path = require("path");
 const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
@@ -15,26 +17,21 @@ const ADMIN_PASS = "1122";
 
 // ================= HOME =================
 app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/index.html");
+    res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // ================= SUBMIT =================
 app.post("/submit", (req, res) => {
     const { name, uid, email, team, device, game } = req.body;
 
-    const data = {
-        name,
-        uid,
-        email,
-        team,
-        device,
-        game
-    };
+    if (!name || !uid || !email) {
+        return res.send("Invalid Data");
+    }
 
-    // save in file
+    const data = { name, uid, email, team, device, game };
+
     fs.appendFileSync("data.txt", JSON.stringify(data) + "\n");
 
-    // 🔥 REAL-TIME PUSH TO ADMIN
     io.emit("new-user", data);
 
     res.send(`
@@ -45,7 +42,7 @@ app.post("/submit", (req, res) => {
     `);
 });
 
-// ================= LOGIN PAGE =================
+// ================= LOGIN =================
 app.get("/login", (req, res) => {
     res.send(`
         <h2 style="text-align:center;margin-top:100px;">Admin Login</h2>
@@ -67,7 +64,7 @@ app.post("/login", (req, res) => {
     res.send("Wrong credentials");
 });
 
-// ================= ADMIN PANEL =================
+// ================= ADMIN =================
 app.get("/admin", (req, res) => {
     res.send(`
         <html>
@@ -94,7 +91,6 @@ app.get("/admin", (req, res) => {
 
         <script>
             const socket = io();
-
             const table = document.getElementById("table");
 
             socket.on("new-user", (data) => {
@@ -118,7 +114,9 @@ app.get("/admin", (req, res) => {
     `);
 });
 
-// ================= START =================
-server.listen(process.env.PORT || 3000, () => {
-    console.log("Server running...");
+// ================= START SERVER (RENDER FIX) =================
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
 });
