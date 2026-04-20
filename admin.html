@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>Admin Panel</title>
     <script src="/socket.io/socket.io.js"></script>
@@ -8,66 +7,59 @@
 
 <body style="background:#020617;color:white;font-family:Arial;text-align:center">
 
-    <h2>🎮 LIVE ADMIN PANEL</h2>
+<h2>🎮 LIVE ADMIN PANEL</h2>
 
-    <table border="1" style="margin:auto;width:95%">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>UID</th>
-                <th>Email</th>
-                <th>Team</th>
-                <th>Device</th>
-                <th>Game</th>
-                <th>Action</th>
-            </tr>
-        </thead>
+<table border="1" style="margin:auto;width:95%">
+<thead>
+<tr>
+<th>Name</th>
+<th>UID</th>
+<th>Email</th>
+<th>Team</th>
+<th>Device</th>
+<th>Game</th>
+<th>Action</th>
+</tr>
+</thead>
 
-        <tbody id="table"></tbody>
-    </table>
+<tbody id="table"></tbody>
+</table>
 
-    <script>
-        const socket = io();
-        const table = document.getElementById("table");
+<script>
+const socket = io();
+const table = document.getElementById("table");
 
-        function addRow(data) {
-            const row = document.createElement("tr");
+function addRow(d){
+    let row = document.createElement("tr");
 
-            row.innerHTML = `
-        <td>${data.name}</td>
-        <td>${data.uid}</td>
-        <td>${data.email}</td>
-        <td>${data.team}</td>
-        <td>${data.device}</td>
-        <td>${data.game}</td>
-        <td><button onclick="deleteUser(${data.id})">Delete</button></td>
+    row.innerHTML = `
+    <td>${d.name}</td>
+    <td>${d.uid}</td>
+    <td>${d.email}</td>
+    <td>${d.team}</td>
+    <td>${d.device}</td>
+    <td>${d.game}</td>
+    <td><button onclick="del(${d.id})">Delete</button></td>
     `;
 
-            table.prepend(row);
-        }
+    table.prepend(row);
+}
 
-        // load data
-        fetch("/data")
-            .then(res => res.json())
-            .then(data => {
-                table.innerHTML = "";
-                data.forEach(addRow);
-            });
+fetch("/data")
+.then(r=>r.json())
+.then(data=>{
+    table.innerHTML="";
+    data.forEach(addRow);
+});
 
-        // live updates
-        socket.on("new-user", addRow);
+socket.on("new-user", addRow);
 
-        socket.on("refresh", () => {
-            location.reload();
-        });
+socket.on("refresh", ()=>location.reload());
 
-        window.deleteUser = function (id) {
-            fetch("/delete/" + id)
-                .then(res => res.text())
-                .then(msg => alert(msg));
-        }
-    </script>
+function del(id){
+    fetch("/delete/"+id).then(()=>alert("Deleted"));
+}
+</script>
 
 </body>
-
 </html>
