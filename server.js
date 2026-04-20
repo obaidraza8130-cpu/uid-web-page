@@ -8,12 +8,12 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// ================= FIX: BODY PARSER =================
+// ================= MIDDLEWARE =================
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ================= FIX: SAFE FILE PATH =================
+// ================= FILE PATH SAFE =================
 const DATA_FILE = path.join(__dirname, "data.json");
 
 // create file if not exists
@@ -26,18 +26,30 @@ process.on("uncaughtException", (err) => {
     console.log("❌ Error:", err);
 });
 
-// ================= HOME =================
+// ================= ROUTES =================
+
+// HOME
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// ================= GET DATA =================
+// LOGIN PAGE (FIX for Cannot GET /login)
+app.get("/login", (req, res) => {
+    res.sendFile(path.join(__dirname, "login.html"));
+});
+
+// ADMIN PAGE
+app.get("/admin", (req, res) => {
+    res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+// GET DATA
 app.get("/data", (req, res) => {
     const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
     res.json(data);
 });
 
-// ================= SUBMIT =================
+// SUBMIT FORM
 app.post("/submit", (req, res) => {
     const { name, uid, email, team, device, game } = req.body;
 
@@ -67,7 +79,7 @@ app.post("/submit", (req, res) => {
     `);
 });
 
-// ================= DELETE =================
+// DELETE USER
 app.get("/delete/:id", (req, res) => {
     const id = Number(req.params.id);
 
@@ -82,85 +94,9 @@ app.get("/delete/:id", (req, res) => {
     res.send("Deleted Successfully");
 });
 
-// ================= ADMIN PANEL =================
-app.get("/admin", (req, res) => {
-    res.send(`
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin Panel</title>
-    <script src="/socket.io/socket.io.js"></script>
-</head>
-
-<body style="background:#020617;color:white;font-family:Arial;text-align:center">
-
-<h2>🎮 LIVE ADMIN PANEL</h2>
-
-<table border="1" style="margin:auto;width:95%">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>UID</th>
-            <th>Email</th>
-            <th>Team</th>
-            <th>Device</th>
-            <th>Game</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-
-    <tbody id="table"></tbody>
-</table>
-
-<script>
-    const socket = io();
-    const table = document.getElementById("table");
-
-    function addRow(data) {
-        const row = document.createElement("tr");
-
-        row.innerHTML = \`
-            <td>\${data.name}</td>
-            <td>\${data.uid}</td>
-            <td>\${data.email}</td>
-            <td>\${data.team}</td>
-            <td>\${data.device}</td>
-            <td>\${data.game}</td>
-            <td><button onclick="deleteUser(\${data.id})">Delete</button></td>
-        \`;
-
-        table.prepend(row);
-    }
-
-    // load data
-    fetch("/data")
-    .then(res => res.json())
-    .then(data => {
-        table.innerHTML = "";
-        data.forEach(addRow);
-    });
-
-    // live update
-    socket.on("new-user", (data) => {
-        addRow(data);
-    });
-
-    socket.on("refresh", () => {
-        location.reload();
-    });
-
-    window.deleteUser = function(id) {
-        fetch("/delete/" + id)
-        .then(res => res.text())
-        .then(msg => {
-            alert(msg);
-        });
-    }
-</script>
-
-</body>
-</html>
-    `);
+// ================= SOCKET =================
+io.on("connection", (socket) => {
+    console.log("User connected");
 });
 
 // ================= START SERVER =================
