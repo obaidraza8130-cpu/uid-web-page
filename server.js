@@ -13,43 +13,42 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ================= FILE PATH SAFE =================
+// ================= FILE =================
 const DATA_FILE = path.join(__dirname, "data.json");
 
-// create file if not exists
 if (!fs.existsSync(DATA_FILE)) {
     fs.writeFileSync(DATA_FILE, "[]", "utf8");
 }
 
-// ================= ERROR HANDLER =================
+// ================= ERROR SAFETY =================
 process.on("uncaughtException", (err) => {
     console.log("❌ Error:", err);
 });
 
 // ================= ROUTES =================
 
-// HOME
+// 🟢 REGISTRATION PAGE (HOME)
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// LOGIN PAGE (FIX for Cannot GET /login)
+// 🔐 LOGIN PAGE
 app.get("/login", (req, res) => {
     res.sendFile(path.join(__dirname, "login.html"));
 });
 
-// ADMIN PAGE
+// 🎮 ADMIN PAGE
 app.get("/admin", (req, res) => {
     res.sendFile(path.join(__dirname, "admin.html"));
 });
 
-// GET DATA
+// 📦 GET DATA
 app.get("/data", (req, res) => {
     const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
     res.json(data);
 });
 
-// SUBMIT FORM
+// 📝 SUBMIT FORM
 app.post("/submit", (req, res) => {
     const { name, uid, email, team, device, game } = req.body;
 
@@ -79,7 +78,7 @@ app.post("/submit", (req, res) => {
     `);
 });
 
-// DELETE USER
+// ❌ DELETE USER
 app.get("/delete/:id", (req, res) => {
     const id = Number(req.params.id);
 
