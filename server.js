@@ -13,21 +13,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ================= FILE =================
+// ================= DATA FILE =================
 const DATA_FILE = path.join(__dirname, "data.json");
 
 if (!fs.existsSync(DATA_FILE)) {
     fs.writeFileSync(DATA_FILE, "[]", "utf8");
 }
 
-// ================= ERROR SAFETY =================
-process.on("uncaughtException", (err) => {
-    console.log("❌ Error:", err);
-});
-
 // ================= ROUTES =================
 
-// 🟢 REGISTRATION PAGE (HOME)
+// 🟢 REGISTRATION PAGE
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
@@ -94,11 +89,11 @@ app.get("/delete/:id", (req, res) => {
 });
 
 // ================= SOCKET =================
-io.on("connection", (socket) => {
+io.on("connection", () => {
     console.log("User connected");
 });
 
-// ================= START SERVER =================
+// ================= START =================
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
