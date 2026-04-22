@@ -1,33 +1,34 @@
 const express = require("express");
 const fs = require("fs");
-const http = require("http");
 const path = require("path");
 const session = require("express-session");
-const { Server } = require("socket.io");
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
 
+// ✅ Render needs this
+const PORT = process.env.PORT || 3000;
+
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname));
+app.use(express.static("public"));
 
 app.use(session({
-    secret: "secret",
+    secret: "secret-key",
     resave: false,
     saveUninitialized: true
 }));
 
+// File
 const DATA_FILE = "data.json";
 if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "[]");
 
-// Serve frontend
+// Routes
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
+    res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
-// LOGIN
+// Login
 app.post("/login", (req, res) => {
     const { username, password } = req.body;
 
@@ -39,23 +40,23 @@ app.post("/login", (req, res) => {
     }
 });
 
-// LOGOUT
-app.get("/logout", (req, res) => {
-    req.session.destroy(() => res.json({ success: true }));
-});
-
-// CHECK AUTH
+// Check auth
 app.get("/check-auth", (req, res) => {
     res.json({ auth: req.session.auth || false });
 });
 
-// DATA
+// Logout
+app.get("/logout", (req, res) => {
+    req.session.destroy(() => res.json({ success: true }));
+});
+
+// Get data
 app.get("/data", (req, res) => {
     const data = JSON.parse(fs.readFileSync(DATA_FILE));
     res.json(data);
 });
 
-// REGISTER
+// Register
 app.post("/submit", (req, res) => {
     const data = JSON.parse(fs.readFileSync(DATA_FILE));
 
@@ -63,22 +64,16 @@ app.post("/submit", (req, res) => {
     data.push(newUser);
 
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    io.emit("update");
-
     res.json({ success: true });
 });
 
-// DELETE
+// Delete
 app.delete("/delete/:id", (req, res) => {
     let data = JSON.parse(fs.readFileSync(DATA_FILE));
     data = data.filter(u => u.id != req.params.id);
 
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-    io.emit("update");
-
     res.sendStatus(200);
 });
 
-io.on("connection", () => {});
-
-server.listen(3000, () => console.log("🚀 Running on 3000"));
+app.listen(PORT, () => console.log("Server running on " + PORT));
