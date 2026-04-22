@@ -2,100 +2,101 @@ const express = require("express");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const session = require("express-session");
 const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// ================= MIDDLEWARE =================
+// Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ================= DATA FILE =================
+app.use(session({
+    secret: "gaming-secret",
+    resave: false,
+    saveUninitialized: true
+}));
+
 const DATA_FILE = path.join(__dirname, "data.json");
 
 if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, "[]", "utf8");
+    fs.writeFileSync(DATA_FILE, "[]");
 }
 
-// ================= ROUTES =================
-
-// 🟢 REGISTRATION PAGE
+// Routes
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// 🔐 LOGIN PAGE
 app.get("/login", (req, res) => {
     res.sendFile(path.join(__dirname, "login.html"));
 });
 
-// 🎮 ADMIN PAGE
 app.get("/admin", (req, res) => {
+    if (!req.session.auth) {
+        return res.redirect("/login");
+    }
     res.sendFile(path.join(__dirname, "admin.html"));
 });
 
-// 📦 GET DATA
+// Login API
+app.post("/login", (req, res) => {
+    const { username, password } = req.body;
+
+    if (username === "admin" && password === "1234") {
+        req.session.auth = true;
+        res.json({ success: true });
+    } else {
+        res.json({ success: false });
+    }
+});
+
+// Logout
+app.get("/logout", (req, res) => {
+    req.session.destroy(() => {
+        res.redirect("/login");
+    });
+});
+
+// Data
 app.get("/data", (req, res) => {
-    const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    const data = JSON.parse(fs.readFileSync(DATA_FILE));
     res.json(data);
 });
 
-// 📝 SUBMIT FORM
+// Submit
 app.post("/submit", (req, res) => {
-    const { name, uid, email, team, device, game } = req.body;
-
-    let data = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    const data = JSON.parse(fs.readFileSync(DATA_FILE));
 
     const newUser = {
         id: Date.now(),
-        name,
-        uid,
-        email,
-        team,
-        device,
-        game
+        ...req.body
     };
 
     data.push(newUser);
-
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 
-    io.emit("new-user", newUser);
+    io.emit("new-user");
 
-    res.send(`
-        <h2 style="color:green;text-align:center;margin-top:50px;">
-        ✅ Registered Successfully
-        </h2>
-        <center><a href="/">Go Back</a></center>
-    `);
+    res.send("<h2 style='color:white;text-align:center'>✅ Registered</h2><center><a href='/'>Back</a></center>");
 });
 
-// ❌ DELETE USER
-app.get("/delete/:id", (req, res) => {
-    const id = Number(req.params.id);
+// Delete
+app.delete("/delete/:id", (req, res) => {
+    let data = JSON.parse(fs.readFileSync(DATA_FILE));
 
-    let data = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-
-    data = data.filter(user => user.id !== id);
+    data = data.filter(u => u.id != req.params.id);
 
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 
     io.emit("refresh");
 
-    res.send("Deleted Successfully");
+    res.sendStatus(200);
 });
 
-// ================= SOCKET =================
-io.on("connection", () => {
-    console.log("User connected");
-});
+io.on("connection", () => {});
 
-// ================= START =================
-const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, () => {
-    console.log("🚀 Server running on port " + PORT);
-});
+server.listen(3000, () => console.log("🚀 Server running"));
