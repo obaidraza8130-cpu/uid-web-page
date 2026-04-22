@@ -1,36 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Registration</title>
+<meta charset="UTF-8">
+<title>Gaming Registration</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", sans-serif;
+}
+
+body {
+    height: 100vh;
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+/* Glass Card */
+.container {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(12px);
+    border-radius: 15px;
+    padding: 30px;
+    width: 350px;
+    box-shadow: 0 0 25px rgba(0,0,0,0.4);
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Inputs */
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    background: #1e293b;
+    color: white;
+}
+
+/* Button */
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    transform: scale(1.05);
+    background: linear-gradient(135deg, #16a34a, #15803d);
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 13px;
+    opacity: 0.7;
+}
+</style>
 </head>
 
-<body style="background:#0b1220;color:white;font-family:Arial;display:flex;justify-content:center;align-items:center;height:100vh;">
+<body>
 
-<div style="background:#111827;padding:20px;border-radius:10px;width:320px;">
+<div class="container">
 
-<h2>🎮 Register</h2>
+<h2>🎮 Gaming Registration</h2>
 
 <form action="/submit" method="POST">
 
-<input name="name" placeholder="Name" required style="width:100%;padding:10px;margin:5px;">
-<input name="uid" placeholder="UID" required style="width:100%;padding:10px;margin:5px;">
-<input name="email" placeholder="Email" required style="width:100%;padding:10px;margin:5px;">
-<input name="team" placeholder="Team" style="width:100%;padding:10px;margin:5px;">
+<input type="text" name="name" placeholder="Full Name" required>
+<input type="text" name="uid" placeholder="Game UID" required>
+<input type="email" name="email" placeholder="Email Address" required>
+<input type="text" name="team" placeholder="Team Name">
 
-<select name="device" required style="width:100%;padding:10px;margin:5px;">
+<select name="device" required>
+<option value="">Select Device</option>
 <option>Mobile</option>
 <option>PC</option>
 </select>
 
-<select name="game" required style="width:100%;padding:10px;margin:5px;">
+<select name="game" required>
+<option value="">Select Game</option>
 <option>Free Fire</option>
 <option>BGMI</option>
 <option>COD</option>
 </select>
 
-<button type="submit" style="width:100%;padding:10px;background:green;color:white;">Register</button>
+<button type="submit">🚀 Register Now</button>
 
 </form>
+
+<div class="footer">
+Made with ❤️ for Gamers
+</div>
 
 </div>
 
