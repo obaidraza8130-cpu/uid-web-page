@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Admin Panel</title>
+<title>Gaming App</title>
 <script src="/socket.io/socket.io.js"></script>
 
 <style>
 body {
     margin:0;
+    font-family:sans-serif;
     background:#0f172a;
     color:white;
-    font-family:sans-serif;
 }
 
 #particles-js {
@@ -19,41 +19,36 @@ body {
     z-index:-1;
 }
 
-header {
-    display:flex;
-    justify-content:space-between;
-    padding:15px;
-    background:#020617;
+.container {
+    max-width:400px;
+    margin:80px auto;
+    background:rgba(255,255,255,0.05);
+    padding:25px;
+    border-radius:12px;
+}
+
+input,select,button {
+    width:100%;
+    padding:10px;
+    margin:8px 0;
+    border:none;
 }
 
 button {
-    padding:8px 12px;
-    border:none;
+    background:#22c55e;
+    color:white;
     cursor:pointer;
-}
-
-.logout { background:red; color:white; }
-
-.container {
-    padding:20px;
 }
 
 table {
     width:100%;
-    border-collapse:collapse;
     margin-top:20px;
+    border-collapse:collapse;
 }
 
-th,td {
-    padding:10px;
-    border-bottom:1px solid #334155;
-}
-
-th { background:#1e293b; }
-
-.delete {
-    background:red;
-    color:white;
+td,th {
+    padding:8px;
+    border-bottom:1px solid #333;
 }
 </style>
 </head>
@@ -62,72 +57,138 @@ th { background:#1e293b; }
 
 <div id="particles-js"></div>
 
-<header>
-<h2>🎮 Admin Dashboard</h2>
-<button class="logout" onclick="logout()">Logout</button>
-</header>
-
-<div class="container">
-
-<h3>Users</h3>
-
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>UID</th>
-<th>Email</th>
-<th>Team</th>
-<th>Device</th>
-<th>Game</th>
-<th>Action</th>
-</tr>
-</thead>
-
-<tbody id="data"></tbody>
-</table>
-
-</div>
+<div class="container" id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 
 <script>
-particlesJS("particles-js", { particles:{ number:{value:50}, size:{value:2} } });
+particlesJS("particles-js",{particles:{number:{value:60}}});
 
 const socket = io();
+const app = document.getElementById("app");
 
-function load(){
-fetch("/data")
-.then(r=>r.json())
-.then(d=>{
-data.innerHTML="";
-d.forEach(u=>{
-data.innerHTML+=`
-<tr>
+// 🔐 CHECK LOGIN
+async function init(){
+    const res = await fetch("/check-auth");
+    const data = await res.json();
+
+    if(data.auth) showAdmin();
+    else showLogin();
+}
+
+// LOGIN UI
+function showLogin(){
+app.innerHTML = `
+<h2>Admin Login</h2>
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<p id="err"></p>
+`;
+}
+
+// LOGIN
+async function login(){
+const res = await fetch("/login",{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({
+username:user.value,
+password:pass.value
+})
+});
+const d = await res.json();
+if(d.success) showAdmin();
+else err.innerText="Wrong login";
+}
+
+// REGISTER UI
+function showRegister(){
+app.innerHTML += `
+<h3>Register Player</h3>
+<input id="name" placeholder="Name">
+<input id="uid" placeholder="UID">
+<input id="email" placeholder="Email">
+<input id="team" placeholder="Team">
+
+<select id="device">
+<option>Mobile</option>
+<option>PC</option>
+</select>
+
+<select id="game">
+<option>Free Fire</option>
+<option>BGMI</option>
+<option>COD</option>
+</select>
+
+<button onclick="register()">Register</button>
+`;
+}
+
+// REGISTER
+async function register(){
+await fetch("/submit",{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({
+name:name.value,
+uid:uid.value,
+email:email.value,
+team:team.value,
+device:device.value,
+game:game.value
+})
+});
+load();
+}
+
+// ADMIN UI
+function showAdmin(){
+app.innerHTML = `
+<h2>Admin Dashboard</h2>
+<button onclick="logout()">Logout</button>
+<div id="table"></div>
+`;
+showRegister();
+load();
+}
+
+// LOAD DATA
+async function load(){
+const res = await fetch("/data");
+const data = await res.json();
+
+let html = "<table><tr><th>Name</th><th>UID</th><th>Game</th><th>Action</th></tr>";
+
+data.forEach(u=>{
+html+=`<tr>
 <td>${u.name}</td>
 <td>${u.uid}</td>
-<td>${u.email}</td>
-<td>${u.team||"-"}</td>
-<td>${u.device}</td>
 <td>${u.game}</td>
-<td><button class="delete" onclick="del(${u.id})">Delete</button></td>
+<td><button onclick="del(${u.id})">Delete</button></td>
 </tr>`;
 });
-});
+
+html+="</table>";
+document.getElementById("table").innerHTML = html;
 }
 
+// DELETE
 function del(id){
-fetch("/delete/"+id,{method:"DELETE"}).then(load);
+fetch("/delete/"+id,{method:"DELETE"});
 }
 
-function logout(){
-location.href="/logout";
+// LOGOUT
+async function logout(){
+await fetch("/logout");
+showLogin();
 }
 
-socket.on("new-user", load);
-socket.on("refresh", load);
+// SOCKET LIVE UPDATE
+socket.on("update", load);
 
-load();
+init();
 </script>
 
 </body>
