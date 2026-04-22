@@ -1,156 +1,194 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Gaming Registration</title>
+<title>Gaming App</title>
+<script src="/socket.io/socket.io.js"></script>
 
 <style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Segoe UI", sans-serif;
-}
-
 body {
-    height: 100vh;
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
+    margin:0;
+    font-family:sans-serif;
+    background:#0f172a;
+    color:white;
 }
 
-/* 🔥 PARTICLES BACKGROUND */
 #particles-js {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    z-index: -1;
+    position:fixed;
+    width:100%;
+    height:100%;
+    z-index:-1;
 }
 
-/* Glass Card */
 .container {
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(12px);
-    border-radius: 15px;
-    padding: 30px;
-    width: 350px;
-    box-shadow: 0 0 25px rgba(0,0,0,0.4);
-    transition: 0.3s;
+    max-width:400px;
+    margin:80px auto;
+    background:rgba(255,255,255,0.05);
+    padding:25px;
+    border-radius:12px;
 }
 
-.container:hover {
-    transform: translateY(-5px);
+input,select,button {
+    width:100%;
+    padding:10px;
+    margin:8px 0;
+    border:none;
 }
 
-h2 {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-/* Inputs */
-input, select {
-    width: 100%;
-    padding: 12px;
-    margin: 8px 0;
-    border-radius: 8px;
-    border: none;
-    outline: none;
-    background: #1e293b;
-    color: white;
-}
-
-/* Button */
 button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    border: none;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    transition: 0.3s;
-    box-shadow: 0 0 15px rgba(34,197,94,0.5);
+    background:#22c55e;
+    color:white;
+    cursor:pointer;
 }
 
-button:hover {
-    transform: scale(1.05);
-    background: linear-gradient(135deg, #16a34a, #15803d);
+table {
+    width:100%;
+    margin-top:20px;
+    border-collapse:collapse;
 }
 
-/* Footer */
-.footer {
-    text-align: center;
-    margin-top: 15px;
-    font-size: 13px;
-    opacity: 0.7;
+td,th {
+    padding:8px;
+    border-bottom:1px solid #333;
 }
 </style>
 </head>
 
 <body>
 
-<!-- 🔥 PARTICLES DIV -->
 <div id="particles-js"></div>
 
-<div class="container">
+<div class="container" id="app"></div>
 
-<h2>🎮 Gaming Registration</h2>
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
 
-<form action="/submit" method="POST">
+<script>
+particlesJS("particles-js",{particles:{number:{value:60}}});
 
-<input type="text" name="name" placeholder="Full Name" required>
-<input type="text" name="uid" placeholder="Game UID" required>
-<input type="email" name="email" placeholder="Email Address" required>
-<input type="text" name="team" placeholder="Team Name">
+const socket = io();
+const app = document.getElementById("app");
 
-<select name="device" required>
-<option value="">Select Device</option>
+// 🔐 CHECK LOGIN
+async function init(){
+    const res = await fetch("/check-auth");
+    const data = await res.json();
+
+    if(data.auth) showAdmin();
+    else showLogin();
+}
+
+// LOGIN UI
+function showLogin(){
+app.innerHTML = `
+<h2>Admin Login</h2>
+<input id="user" placeholder="Username">
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<p id="err"></p>
+`;
+}
+
+// LOGIN
+async function login(){
+const res = await fetch("/login",{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({
+username:user.value,
+password:pass.value
+})
+});
+const d = await res.json();
+if(d.success) showAdmin();
+else err.innerText="Wrong login";
+}
+
+// REGISTER UI
+function showRegister(){
+app.innerHTML += `
+<h3>Register Player</h3>
+<input id="name" placeholder="Name">
+<input id="uid" placeholder="UID">
+<input id="email" placeholder="Email">
+<input id="team" placeholder="Team">
+
+<select id="device">
 <option>Mobile</option>
 <option>PC</option>
 </select>
 
-<select name="game" required>
-<option value="">Select Game</option>
+<select id="game">
 <option>Free Fire</option>
 <option>BGMI</option>
 <option>COD</option>
 </select>
 
-<button type="submit">🚀 Register Now</button>
+<button onclick="register()">Register</button>
+`;
+}
 
-</form>
-
-<div class="footer">
-Made with ❤️ for Gamers
-</div>
-
-</div>
-
-<!-- 🔥 PARTICLES SCRIPT -->
-<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-
-<script>
-particlesJS("particles-js", {
-  particles: {
-    number: { value: 90 },
-    size: { value: 3 },
-    move: { speed: 2 },
-    line_linked: { enable: true, opacity: 0.3 },
-    opacity: { value: 0.5 }
-  },
-  interactivity: {
-    events: {
-      onhover: { enable: true, mode: "repulse" },
-      onclick: { enable: true, mode: "push" }
-    }
-  }
+// REGISTER
+async function register(){
+await fetch("/submit",{
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body:JSON.stringify({
+name:name.value,
+uid:uid.value,
+email:email.value,
+team:team.value,
+device:device.value,
+game:game.value
+})
 });
+load();
+}
+
+// ADMIN UI
+function showAdmin(){
+app.innerHTML = `
+<h2>Admin Dashboard</h2>
+<button onclick="logout()">Logout</button>
+<div id="table"></div>
+`;
+showRegister();
+load();
+}
+
+// LOAD DATA
+async function load(){
+const res = await fetch("/data");
+const data = await res.json();
+
+let html = "<table><tr><th>Name</th><th>UID</th><th>Game</th><th>Action</th></tr>";
+
+data.forEach(u=>{
+html+=`<tr>
+<td>${u.name}</td>
+<td>${u.uid}</td>
+<td>${u.game}</td>
+<td><button onclick="del(${u.id})">Delete</button></td>
+</tr>`;
+});
+
+html+="</table>";
+document.getElementById("table").innerHTML = html;
+}
+
+// DELETE
+function del(id){
+fetch("/delete/"+id,{method:"DELETE"});
+}
+
+// LOGOUT
+async function logout(){
+await fetch("/logout");
+showLogin();
+}
+
+// SOCKET LIVE UPDATE
+socket.on("update", load);
+
+init();
 </script>
 
 </body>
