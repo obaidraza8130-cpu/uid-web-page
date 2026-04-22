@@ -1,15 +1,77 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Panel</title>
-    <script src="/socket.io/socket.io.js"></script>
+<title>Admin Panel</title>
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+body {
+    margin:0;
+    background:#0f172a;
+    color:white;
+    font-family:sans-serif;
+}
+
+#particles-js {
+    position:fixed;
+    width:100%;
+    height:100%;
+    z-index:-1;
+}
+
+header {
+    display:flex;
+    justify-content:space-between;
+    padding:15px;
+    background:#020617;
+}
+
+button {
+    padding:8px 12px;
+    border:none;
+    cursor:pointer;
+}
+
+.logout { background:red; color:white; }
+
+.container {
+    padding:20px;
+}
+
+table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+th,td {
+    padding:10px;
+    border-bottom:1px solid #334155;
+}
+
+th { background:#1e293b; }
+
+.delete {
+    background:red;
+    color:white;
+}
+</style>
 </head>
 
-<body style="background:#020617;color:white;font-family:Arial;text-align:center">
+<body>
 
-<h2>🎮 LIVE ADMIN PANEL</h2>
+<div id="particles-js"></div>
 
-<table border="1" style="margin:auto;width:95%">
+<header>
+<h2>🎮 Admin Dashboard</h2>
+<button class="logout" onclick="logout()">Logout</button>
+</header>
+
+<div class="container">
+
+<h3>Users</h3>
+
+<table>
 <thead>
 <tr>
 <th>Name</th>
@@ -22,43 +84,50 @@
 </tr>
 </thead>
 
-<tbody id="table"></tbody>
+<tbody id="data"></tbody>
 </table>
 
+</div>
+
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+
 <script>
+particlesJS("particles-js", { particles:{ number:{value:50}, size:{value:2} } });
+
 const socket = io();
-const table = document.getElementById("table");
 
-function addRow(d){
-    let row = document.createElement("tr");
-
-    row.innerHTML = `
-    <td>${d.name}</td>
-    <td>${d.uid}</td>
-    <td>${d.email}</td>
-    <td>${d.team}</td>
-    <td>${d.device}</td>
-    <td>${d.game}</td>
-    <td><button onclick="del(${d.id})">Delete</button></td>
-    `;
-
-    table.prepend(row);
-}
-
+function load(){
 fetch("/data")
 .then(r=>r.json())
-.then(data=>{
-    table.innerHTML="";
-    data.forEach(addRow);
+.then(d=>{
+data.innerHTML="";
+d.forEach(u=>{
+data.innerHTML+=`
+<tr>
+<td>${u.name}</td>
+<td>${u.uid}</td>
+<td>${u.email}</td>
+<td>${u.team||"-"}</td>
+<td>${u.device}</td>
+<td>${u.game}</td>
+<td><button class="delete" onclick="del(${u.id})">Delete</button></td>
+</tr>`;
 });
-
-socket.on("new-user", addRow);
-
-socket.on("refresh", ()=>location.reload());
+});
+}
 
 function del(id){
-    fetch("/delete/"+id).then(()=>alert("Deleted"));
+fetch("/delete/"+id,{method:"DELETE"}).then(load);
 }
+
+function logout(){
+location.href="/logout";
+}
+
+socket.on("new-user", load);
+socket.on("refresh", load);
+
+load();
 </script>
 
 </body>
